@@ -11,6 +11,7 @@ import idc.storyalbum.model.album.AlbumPage;
 import idc.storyalbum.model.image.Rectangle;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.awt.image.BufferedImage;
@@ -99,10 +100,11 @@ public abstract class AbsSearcher {
 
             BufferedImage bufferedImage = imageService.loadImage(album.getBaseDir(), albumPage.getImage().getImageFilename());
             log.debug("    Image {}x{}", bufferedImage.getWidth(), bufferedImage.getHeight());
-            BufferedImage croppedImage = imageService.cropImage(bufferedImage, imageFrame.getImageRect().getDimension());
-            imageFrame.setImage(croppedImage);
+            Pair<BufferedImage,Double> croppedImageData =
+                    imageService.cropImage(albumPage.getImage(), bufferedImage, imageFrame.getImageRect().getDimension());
+            imageFrame.setImage(croppedImageData.getLeft());
             //TODO use a real scoring here
-            score += RandomUtils.nextDouble(0, 1);
+            score += croppedImageData.getRight();
 
             ImageService.TextImageHolder textImageHolder =
                     imageService.getTextImage(albumPage.getText(), pageLayout.getHeight(), imageFrame.getTextRect());

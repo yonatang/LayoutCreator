@@ -21,6 +21,8 @@ public class CacheConfig {
     public CacheManager cacheManager() {
         SimpleCacheManager cacheManager = new SimpleCacheManager();
         cacheManager.setCaches(Arrays.asList(
+                new ConcurrentMapCache("vector-cache"),
+                new ConcurrentMapCache("raw-image-cache"),
                 new ConcurrentMapCache("text-image-cache"),
                 new ConcurrentMapCache("cropped-image-cache")));
         return cacheManager;

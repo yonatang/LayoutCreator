@@ -1,14 +1,16 @@
 package idc.storyalbum.layout.service;
 
 import com.google.common.base.Splitter;
+import idc.storyalbum.model.image.AnnotatedImage;
 import idc.storyalbum.model.image.Dimension;
 import idc.storyalbum.model.image.Rectangle;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -18,10 +20,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by yonatan on 16/5/2015.
@@ -33,6 +33,9 @@ public class ImageService {
     private int maxFontSize = 50;
     private String fontName = "Comic Sans MS";
 
+    @Autowired
+    private LegacyVectorService legacyVectorService;
+
     @AllArgsConstructor
     @Getter
     public class TextImageHolder {
@@ -42,6 +45,7 @@ public class ImageService {
         private int frameHeight;
         private BufferedImage image;
     }
+
     /**
      * @param text
      * @param pageHeight
@@ -91,7 +95,7 @@ public class ImageService {
             }
             currentHeight -= spacingBetweenLines;
             g.dispose();
-            return new TextImageHolder(defaultFontSize,fontSize,currentHeight,textRect.getHeight(),image);
+            return new TextImageHolder(defaultFontSize, fontSize, currentHeight, textRect.getHeight(), image);
         } while (true);
     }
 
@@ -142,16 +146,11 @@ public class ImageService {
         SQUARE
     }
 
-    private Map<String, BufferedImage> imageCache = new HashMap<>();
 
+    @Cacheable("raw-image-cache")
     public BufferedImage loadImage(File folder, String file) {
         try {
-            String key = folder.getAbsolutePath() + File.separatorChar + file;
-            if (imageCache.containsKey(key)) {
-                return imageCache.get(key);
-            }
             BufferedImage image = ImageIO.read(new File(folder, file));
-            imageCache.put(key, image);
             return image;
         } catch (IOException e) {
             log.error("Cannot read file {} {}", folder, file);
@@ -179,10 +178,32 @@ public class ImageService {
         return Orientation.HORIZONTAL;
     }
 
+    private File getImageSilencyVectorFile(AnnotatedImage annotatedImage) {
+        String baseFile = "/Users/yonatan/Dropbox/Studies/Story Albums/Sets/Riddle/Set1/saliencySum";
+        String fileName = FilenameUtils.removeExtension(annotatedImage.getImageFilename());
+        return new File(baseFile + File.separatorChar + fileName + ".xml");
+    }
+
+    private File getImageFaceVectorFile(AnnotatedImage annotatedImage) {
+        String baseFile = "/Users/yonatan/Dropbox/Studies/Story Albums/Sets/Riddle/Set1/faces";
+        String fileName = FilenameUtils.removeExtension(annotatedImage.getImageFilename());
+        return new File(baseFile + File.separatorChar + fileName + ".xml");
+    }
+
     @Cacheable("cropped-image-cache")
-    public BufferedImage cropImage(BufferedImage image, Dimension targetSize) {
+    public Pair<BufferedImage, Double> cropImage(AnnotatedImage albumPageImage, BufferedImage image, Dimension targetSize) {
         log.debug("  Original image {}x{}", image.getWidth(), image.getHeight());
         log.debug("  Target image   {}x{}", targetSize.getWidth(), targetSize.getHeight());
+
+        LegacyVectorService.SalientSum vSilency;
+        LegacyVectorService.SalientSum vFaces;
+        try {
+            vSilency = legacyVectorService.readVector(getImageSilencyVectorFile(albumPageImage));
+            vFaces = legacyVectorService.readVector(getImageFaceVectorFile(albumPageImage));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
 
         double widthRatio = (double) targetSize.getWidth() / (double) image.getWidth();
         double heightRatio = (double) targetSize.getHeight() / (double) image.getHeight();
@@ -195,25 +216,62 @@ public class ImageService {
         if (targetSize.getHeight() == scaledImage.getHeight() &&
                 targetSize.getWidth() == scaledImage.getWidth()) {
             //perfect fit - same ratio
-            return scaledImage;
+            return new ImmutablePair<>(scaledImage, 1.0);
+        }
+        if (vFaces.getHorizontalVector().size() != image.getWidth()) {
+            log.error("faces horiz vector size {}, image width {}, file {}",
+                    vFaces.getHorizontalVector().size(), image.getWidth(), albumPageImage.getImageFilename());
+            throw new RuntimeException("Bad horz face vector for " + albumPageImage.getImageFilename());
+        }
+        if (vFaces.getVerticalVector().size() != image.getHeight()) {
+            log.error("faces vert vector size {}, image height {}, file {}",
+                    vFaces.getVerticalVector().size(), image.getHeight(), albumPageImage.getImageFilename());
+            throw new RuntimeException("Bad vert face vector for " + albumPageImage.getImageFilename());
+        }
+        if (vSilency.getHorizontalVector().size() != image.getWidth()) {
+            log.error("silency horiz vector size {}, image width {}, file {}",
+                    vSilency.getHorizontalVector().size(), image.getWidth(), albumPageImage.getImageFilename());
+            throw new RuntimeException("Bad horz silency vector for " + albumPageImage.getImageFilename());
+        }
+        if (vSilency.getVerticalVector().size() != image.getHeight()) {
+            log.error("silency vert vector size {}, image height {}, file {}",
+                    vSilency.getVerticalVector().size(), image.getHeight(), albumPageImage.getImageFilename());
+            throw new RuntimeException("Bad vert silency vector for " + albumPageImage.getImageFilename());
         }
 
-        boolean xDirectionScan = targetSize.getWidth() > scaledImage.getWidth();
+        boolean xDirectionScan = targetSize.getWidth() < scaledImage.getWidth();
+        int windowSize = (xDirectionScan ?
+                targetSize.getWidth() :
+                targetSize.getHeight());
 
-        int maxZ = (xDirectionScan ?
-                scaledImage.getWidth() - targetSize.getWidth() :
-                scaledImage.getHeight() - targetSize.getHeight());
-
+        int nonScaledWindowSize = (int) (windowSize * (1 / targetRatio));
+        int maxI = (xDirectionScan ?
+                image.getWidth() - nonScaledWindowSize :
+                image.getHeight() - nonScaledWindowSize);
         double bestScore = Double.NEGATIVE_INFINITY;
         int bestI = 0;
-        for (int i = 0; i < maxZ; i++) {
-            //TODO do a real calculation here
-            double score = RandomUtils.nextDouble(0, 100000);
+        double saliencyOrg = legacyVectorService.calcWindow(vSilency, xDirectionScan, 0,
+                (xDirectionScan ? image.getWidth() : image.getHeight()) - 1);
+        double facesOrg = legacyVectorService.calcWindow(vFaces, xDirectionScan, 0,
+                (xDirectionScan ? image.getWidth() : image.getHeight()) - 1);
+        log.debug("Faces fit {}, saliency fit {}", facesOrg, saliencyOrg);
+        double beta = 0.2;
+        for (int i = 0; i < maxI; i++) {
+            double sFit = legacyVectorService.calcWindow(vSilency, xDirectionScan, i, i + nonScaledWindowSize);
+            double score;
+            if (facesOrg > 0) {
+                double fFit = legacyVectorService.calcWindow(vFaces, xDirectionScan, i, i + nonScaledWindowSize);
+                score = beta * (sFit / saliencyOrg) + (1 - beta) * (fFit / facesOrg);
+            } else {
+                score = (sFit / saliencyOrg);
+            }
+//            log.debug("From {} to {} scanning (window {}, maxI {}) - score {}", i, i + nonScaledWindowSize, nonScaledWindowSize, maxI, score);
             if (score > bestScore) {
-                bestI = i;
                 bestScore = score;
+                bestI = i;
             }
         }
+        bestI = (int) (bestI * targetRatio);
 
         BufferedImage croppedImage;
         if (xDirectionScan) {
@@ -225,12 +283,11 @@ public class ImageService {
                     0, bestI, targetSize.getWidth(), targetSize.getHeight());
             croppedImage = scaledImage.getSubimage(0, bestI, targetSize.getWidth(), targetSize.getHeight());
         }
-        return croppedImage;
+        log.debug("Returning image with score {}", bestScore);
+        return new ImmutablePair<>(croppedImage, bestScore);
     }
 
     private BufferedImage getScaledImage(BufferedImage image, double targetRatio) {
-        //getScaledInstance has poor performance
-//        Math.round()
         int newWidth = (int) Math.round(image.getWidth() * targetRatio);
         int newHeight = (int) Math.round(image.getHeight() * targetRatio);
 
