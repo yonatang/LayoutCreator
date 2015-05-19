@@ -9,7 +9,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,7 +25,7 @@ public class ExhaustiveSearcher extends AbsSearcher {
     private void generatePartialList(List<List<Integer>> result,
                                      Integer[] arr, int pointer, int partialSum, Set<Integer> sizes, int target, int sizeLimit) {
         if (partialSum == target) {
-            result.add(Lists.newArrayList(ArrayUtils.subarray(arr,0,pointer)));
+            result.add(Lists.newArrayList(ArrayUtils.subarray(arr, 0, pointer)));
             return;
         }
         if (partialSum > target || (sizeLimit > 0 && pointer == sizeLimit)) {
@@ -69,12 +68,15 @@ public class ExhaustiveSearcher extends AbsSearcher {
         }
         double score = Double.NEGATIVE_INFINITY;
         Layout best = null;
+        int i = 0;
         for (List<Integer> layoutOption : layoutOptions) {
+            log.debug("   Looking at permutation {}/{} - {}", i, layoutOptions.size(), layoutOption);
             Layout result = findBestMatchingLayout(templatesBySize, album, layoutOption);
             if (result.getScore() > score) {
                 best = result;
                 score = result.getScore();
             }
+            i++;
         }
         return best;
     }

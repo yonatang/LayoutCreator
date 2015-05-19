@@ -10,11 +10,11 @@ import idc.storyalbum.model.album.Album;
 import idc.storyalbum.model.album.AlbumPage;
 import idc.storyalbum.model.image.Rectangle;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,17 +50,83 @@ public abstract class AbsSearcher {
     }
 
 
+    private void incArr(int[] idxes_max, int[] idxes) {
+        for (int i = 0; i < idxes.length; i++) {
+            idxes[i]++;
+            if (idxes[i] == idxes_max[i]) {
+                idxes[i] = 0;
+            } else {
+                break;
+            }
+        }
+    }
+
     Layout findBestMatchingLayout(Map<Integer, Set<PageTemplate>> templatesBySize,
                                   Album album,
                                   List<Integer> layoutOption) {
-        int pageIdx = 0;
-        Layout layout = new Layout();
-        for (Integer size : layoutOption) {
-            PageLayout pageLayout = findBestMatchingPageTemplate(album, templatesBySize, size, pageIdx);
-            layout.getPages().add(pageLayout);
-            pageIdx += size;
+        List<List<PageTemplate>> allOptions = new ArrayList<>();
+        int totalOptions = 1;
+        int[] idxes = new int[layoutOption.size()];
+        int[] idxes_max = new int[layoutOption.size()];
+        for (int i = 0; i < layoutOption.size(); i++) {
+            int size = layoutOption.get(i);
+            allOptions.add(new ArrayList<>(templatesBySize.get(size)));
+            totalOptions *= templatesBySize.get(size).size();
+            idxes_max[i] = templatesBySize.get(size).size();
         }
-        return layout;
+
+        int i = 0;
+        int totalPages = album.getPages().size();
+        double bestScore = Double.NEGATIVE_INFINITY;
+        Layout bestLayout = null;
+        while (i < totalOptions) {
+            i++;
+            if (log.isDebugEnabled() && (i % 10000 == 0)) {
+                log.debug("    Looking at option {}/{}", i, totalOptions);
+            }
+            Layout layout = new Layout();
+            int pageIdx = 0;
+            double score = 0;
+            int maxn = 0;
+            for (int j = 0; j < idxes.length; j++) {
+                PageTemplate pageTemplate = allOptions.get(j).get(idxes[j]);
+                PageLayout pageLayout = createPageLayout(pageTemplate, album, pageIdx);
+                maxn = Math.max(maxn, pageLayout.getImageFrames().size());
+                pageIdx += pageLayout.getImageFrames().size();
+                score += calcPageLayoutScore(totalPages, pageLayout);
+                layout.getPages().add(pageLayout);
+                pageLayout.setScore(score);
+            }
+            score += 0.1 * (totalPages * totalPages / (maxn * maxn));
+            layout.setScore(score);
+            if (score > bestScore) {
+                bestLayout = layout;
+                bestScore = score;
+            }
+
+            incArr(idxes_max, idxes);
+
+        }
+//        int pageIdx = 0;
+//        Layout layout = new Layout();
+//        for (Integer size : layoutOption) {
+//            PageLayout pageLayout = findBestMatchingPageTemplate(album, templatesBySize, size, pageIdx);
+//            layout.getPages().add(pageLayout);
+//            pageIdx += size;
+//        }
+        log.debug("Found candidate layout {}",bestLayout);
+        return bestLayout;
+    }
+
+    private double calcPageLayoutScore(int totalPages, PageLayout pageTemplate) {
+        double score = 0;
+        for (ImageFrame imageFrame : pageTemplate.getImageFrames()) {
+            double textScore = imageFrame.getTextScore();
+            double fitScore = imageFrame.getFitScore();
+            double orientationScore = imageFrame.getOrientationScore();
+            score += (0.5 / totalPages) * fitScore + (0.2 / totalPages) * textScore + (0.2 / totalPages) * orientationScore;
+        }
+        return score;
     }
 
     private PageLayout findBestMatchingPageTemplate(Album album, Map<Integer, Set<PageTemplate>> templatesBySize,
@@ -69,25 +135,20 @@ public abstract class AbsSearcher {
         Set<PageTemplate> pageTemplates = templatesBySize.get(size);
         PageLayout best = null;
         double bestScore = Double.NEGATIVE_INFINITY;
+        int totalPages = album.getPages().size();
         for (PageTemplate pageTemplate : pageTemplates) {
             PageLayout candidate = createPageLayout(pageTemplate, album, pageIdx);
-            double score=0;
-            for (ImageFrame imageFrame : candidate.getImageFrames()) {
-                double textScore = imageFrame.getTextScore();
-                double fitScore = imageFrame.getFitScore();
-                double orientationScore = imageFrame.getOrientationScore();
-                score += 0.5*fitScore+0.2*textScore+0.2*orientationScore;
-            }
+            double score = calcPageLayoutScore(totalPages, candidate);
             if (score > bestScore) {
                 best = candidate;
-                bestScore=score;
+                bestScore = score;
             }
         }
         return best;
     }
 
     private PageLayout createPageLayout(PageTemplate pageTemplate, Album album, int pageIdx) {
-        log.debug("  Page Template {}", pageTemplate);
+//        log.debug("  Page Template {}", pageTemplate);
         int templateSize = pageTemplate.getFrames().size();
         List<AlbumPage> subAlbumPages = album.getPages().subList(pageIdx, pageIdx + templateSize);
         PageLayout pageLayout = new PageLayout();
@@ -97,7 +158,7 @@ public abstract class AbsSearcher {
         for (int i = 0; i < templateSize; i++) {
             AlbumPage albumPage = subAlbumPages.get(i);
             Frame templateFrame = pageTemplate.getFrames().get(i);
-            log.debug("    Trying templateFrame {}", templateFrame);
+//            log.debug("    Trying templateFrame {}", templateFrame);
             ImageFrame imageFrame = new ImageFrame();
             pageLayout.getImageFrames().add(imageFrame);
             imageFrame.setImageRect(new Rectangle(templateFrame.getImageRect()));
@@ -106,8 +167,8 @@ public abstract class AbsSearcher {
 
 
             BufferedImage bufferedImage = imageService.loadImage(album.getBaseDir(), albumPage.getImage().getImageFilename());
-            log.debug("    Image {}x{}", bufferedImage.getWidth(), bufferedImage.getHeight());
-            Pair<BufferedImage,Double> croppedImageData =
+//            log.debug("    Image {}x{}", bufferedImage.getWidth(), bufferedImage.getHeight());
+            Pair<BufferedImage, Double> croppedImageData =
                     imageService.cropImage(albumPage.getImage(), bufferedImage, imageFrame.getImageRect().getDimension());
             imageFrame.setImage(croppedImageData.getLeft());
 

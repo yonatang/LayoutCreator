@@ -16,7 +16,8 @@ public class Layout {
     @Setter(AccessLevel.NONE)
     private List<PageLayout> pages=new ArrayList<>();
 
-    public Double getScore(){
-        return pages.stream().mapToDouble(PageLayout::getScore).sum();
-    }
+    private double score;
+//    public Double getScore(){
+//        return pages.stream().mapToDouble(PageLayout::getScore).sum();
+//    }
 }
