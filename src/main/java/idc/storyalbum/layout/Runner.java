@@ -28,7 +28,7 @@ public class Runner implements CommandLineRunner {
     @Value("${story-album.album-file}")
     private String albumFile;
 
-    @Value("${stoyr-album.max-pages:0}")
+    @Value("${story-album.max-pages:0}")
     private int maxPageLayouts;
 
     @Value("${story-album.output-dir}")
