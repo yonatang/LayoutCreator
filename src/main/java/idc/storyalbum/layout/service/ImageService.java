@@ -11,6 +11,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +33,12 @@ public class ImageService {
     private int minFontSize = 10;
     private int maxFontSize = 50;
     private String fontName = "Comic Sans MS";
+
+    @Value("${story-album.saliency-dir}")
+    private String saliencyDir;
+
+    @Value("${story-album.face-vector-dir}")
+    private String faceVectorDir;
 
     @Autowired
     private LegacyVectorService legacyVectorService;
@@ -179,13 +186,13 @@ public class ImageService {
     }
 
     private File getImageSilencyVectorFile(AnnotatedImage annotatedImage) {
-        String baseFile = "/Users/yonatan/Dropbox/Studies/Story Albums/Sets/Riddle/Set1/saliencySum";
+        String baseFile = saliencyDir; //"/Users/yonatan/Dropbox/Studies/Story Albums/Sets/Riddle/Set1/saliencySum";
         String fileName = FilenameUtils.removeExtension(annotatedImage.getImageFilename());
         return new File(baseFile + File.separatorChar + fileName + ".xml");
     }
 
     private File getImageFaceVectorFile(AnnotatedImage annotatedImage) {
-        String baseFile = "/Users/yonatan/Dropbox/Studies/Story Albums/Sets/Riddle/Set1/faces";
+        String baseFile = faceVectorDir; //"/Users/yonatan/Dropbox/Studies/Story Albums/Sets/Riddle/Set1/faces";
         String fileName = FilenameUtils.removeExtension(annotatedImage.getImageFilename());
         return new File(baseFile + File.separatorChar + fileName + ".xml");
     }

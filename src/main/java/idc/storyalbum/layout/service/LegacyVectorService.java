@@ -38,9 +38,11 @@ public class LegacyVectorService {
         DocumentBuilder db = dbf.newDocumentBuilder();
         Document doc = db.parse(file);
         SalientSum ss = new SalientSum();
-        // seems the files got mixed up with the data.
-        readVectorList(doc, "horizontalVector", ss.verticalVector, ss.sumsVert);
-        readVectorList(doc, "verticalVector", ss.horizontalVector, ss.sumsHorz);
+//        // seems the files got mixed up with the data.
+//        readVectorList(doc, "horizontalVector", ss.verticalVector, ss.sumsVert);
+//        readVectorList(doc, "verticalVector", ss.horizontalVector, ss.sumsHorz);
+        readVectorList(doc, "verticalVector", ss.verticalVector, ss.sumsVert);
+        readVectorList(doc, "horizontalVector", ss.horizontalVector, ss.sumsHorz);
         ss.file = file;
         return ss;
     }
