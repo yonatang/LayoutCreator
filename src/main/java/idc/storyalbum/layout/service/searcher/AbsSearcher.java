@@ -177,7 +177,7 @@ public abstract class AbsSearcher {
                     imageService.getOrientation(bufferedImage) == imageService.getOrientation(imageFrame.getImageRect()) ? 1 : 0);
 
             ImageService.TextImageHolder textImageHolder =
-                    imageService.getTextImage(albumPage.getText(), pageLayout.getHeight(), imageFrame.getTextRect());
+                    imageService.getTextImage(albumPage.getText(), pageTemplate, imageFrame.getTextRect());
             imageFrame.setTextImage(textImageHolder.getImage());
             imageFrame.setTextScore(calcTextScore(textImageHolder));
         }

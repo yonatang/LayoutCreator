@@ -1,6 +1,7 @@
 package idc.storyalbum.layout.service;
 
 import com.google.common.base.Splitter;
+import idc.storyalbum.layout.model.template.PageTemplate;
 import idc.storyalbum.model.image.AnnotatedImage;
 import idc.storyalbum.model.image.Dimension;
 import idc.storyalbum.model.image.Rectangle;
@@ -32,7 +33,6 @@ import java.util.List;
 public class ImageService {
     private int minFontSize = 10;
     private int maxFontSize = 50;
-    private String fontName = "Comic Sans MS";
 
     @Value("${story-album.saliency-dir}")
     private String saliencyDir;
@@ -55,19 +55,23 @@ public class ImageService {
 
     /**
      * @param text
-     * @param pageHeight
+     * @param pageTemplate
      * @param textRect
      * @return The textual image and the height of the text within the image
      */
     @Cacheable("text-image-cache")
-    public TextImageHolder getTextImage(String text, int pageHeight, Rectangle textRect) {
+    public TextImageHolder getTextImage(String text, PageTemplate pageTemplate,
+                                        Rectangle textRect) {
+        int pageHeight=pageTemplate.getHeight();
+        String fontName=pageTemplate.getFontName();
+        int fontStyle=pageTemplate.getFontStyle();
         int defaultFontSize = pageHeight / 10;
         BufferedImage image = new BufferedImage(textRect.getWidth(), textRect.getHeight(), BufferedImage.TYPE_INT_ARGB);
         int fontSize = Math.min(Math.max(minFontSize, defaultFontSize), maxFontSize);
 
         Graphics2D g = image.createGraphics();
         do {
-            Font font = new Font(fontName, Font.CENTER_BASELINE, fontSize);
+            Font font = new Font(fontName, fontStyle, fontSize);
             int spacingBetweenLines = fontSize / 4;
             int xOffset = (int) (fontSize * 1.5);
 
@@ -85,13 +89,15 @@ public class ImageService {
                 continue;
             }
 
-            g.setColor(Color.white);
-            g.fillRect(0, 0, textRect.getWidth(), textRect.getHeight() - 3);
+
+//            g.setColor(Color.white);
+//            g.fillRect(0, 0, textRect.getWidth(), textRect.getHeight() - 3);
 
             // Stroke oldStroke = g2d.getStroke();
-            g.setColor(Color.black);
+            Color fontColor=Color.getColor(pageTemplate.getFontColor(),Color.white);
+            g.setColor(fontColor);
             g.setStroke(new BasicStroke(8));
-            g.drawRect(0, 0, textRect.getWidth(), textRect.getHeight());
+//            g.drawRect(0, 0, textRect.getWidth(), textRect.getHeight());
             // g2d.setStroke(oldStroke);
             g.setFont(font);
 

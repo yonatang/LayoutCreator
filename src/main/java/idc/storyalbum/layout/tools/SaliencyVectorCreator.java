@@ -16,9 +16,9 @@ import java.util.List;
  */
 public class SaliencyVectorCreator {
 
-    static final String IMG_DIR = "/Users/yonatan/Dropbox/Studies/Story Albums/sets/Zoo/72157600312588222/images/";
-    static final String SAL_IMG_DIR = "/Users/yonatan/Dropbox/Studies/Story Albums/sets/Zoo/72157600312588222/saliency/";
-    static final String SALSUM_IMG_DIR = "/Users/yonatan/Dropbox/Studies/Story Albums/sets/Zoo/72157600312588222/saliencySum/";
+    static final String IMG_DIR = "/Users/yonatan/Dropbox/Studies/Story Albums/sets/Zoo/72157604991613315/images/";
+    static final String SAL_IMG_DIR = "/Users/yonatan/Dropbox/Studies/Story Albums/sets/Zoo/72157604991613315/saliency/";
+    static final String SALSUM_IMG_DIR = "/Users/yonatan/Dropbox/Studies/Story Albums/sets/Zoo/72157604991613315/saliencySum/";
 
     public static void main(String... args) throws Exception {
         File salDir = new File(SAL_IMG_DIR);

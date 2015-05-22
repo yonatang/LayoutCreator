@@ -12,6 +12,9 @@ import java.util.List;
  */
 @Data
 public class PageTemplate {
+    private String fontColor;
+    private String fontName;
+    private int fontStyle;
     @Setter(AccessLevel.NONE)
     private List<Frame> frames = new ArrayList<>();
 
