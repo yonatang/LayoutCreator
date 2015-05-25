@@ -31,14 +31,21 @@ import java.util.List;
 @Service
 @Slf4j
 public class ImageService {
-    private int minFontSize = 10;
-    private int maxFontSize = 50;
-
     @Value("${story-album.saliency-dir}")
     private String saliencyDir;
 
     @Value("${story-album.face-vector-dir}")
     private String faceVectorDir;
+
+    @Value("${story-album.font.percent:0.1}")
+    private double fontSizePercent;
+
+    @Value("${story-album.font.min-size:10}")
+    private int minFontSize;
+    @Value("${story-album.font.max-size:50}")
+    private int maxFontSize;
+
+
 
     @Autowired
     private LegacyVectorService legacyVectorService;
@@ -62,10 +69,10 @@ public class ImageService {
     @Cacheable("text-image-cache")
     public TextImageHolder getTextImage(String text, PageTemplate pageTemplate,
                                         Rectangle textRect) {
-        int pageHeight=pageTemplate.getHeight();
-        String fontName=pageTemplate.getFontName();
-        int fontStyle=pageTemplate.getFontStyle();
-        int defaultFontSize = pageHeight / 10;
+        int pageHeight = pageTemplate.getHeight();
+        String fontName = pageTemplate.getFontName();
+        int fontStyle = pageTemplate.getFontStyle();
+        int defaultFontSize = (int)(pageHeight * fontSizePercent);
         BufferedImage image = new BufferedImage(textRect.getWidth(), textRect.getHeight(), BufferedImage.TYPE_INT_ARGB);
         int fontSize = Math.min(Math.max(minFontSize, defaultFontSize), maxFontSize);
 
@@ -93,8 +100,8 @@ public class ImageService {
 //            g.setColor(Color.white);
 //            g.fillRect(0, 0, textRect.getWidth(), textRect.getHeight() - 3);
 
-            // Stroke oldStroke = g2d.getStroke();
-            Color fontColor=Color.getColor(pageTemplate.getFontColor(),Color.white);
+            // Stroke oldStroke = g2d.getStroke();d
+            Color fontColor = pageTemplate.getFontColor() != null ? new Color(pageTemplate.getFontColor()) : Color.white;
             g.setColor(fontColor);
             g.setStroke(new BasicStroke(8));
 //            g.drawRect(0, 0, textRect.getWidth(), textRect.getHeight());
@@ -203,6 +210,10 @@ public class ImageService {
         return new File(baseFile + File.separatorChar + fileName + ".xml");
     }
 
+    @Value("${story-album.image.resize-on-failed-vector:false}")
+    private boolean resizeOnFailedVector;
+
+
     @Cacheable("cropped-image-cache")
     public Pair<BufferedImage, Double> cropImage(AnnotatedImage albumPageImage, BufferedImage image, Dimension targetSize) {
         log.debug("  Original image {}x{}", image.getWidth(), image.getHeight());
@@ -214,6 +225,10 @@ public class ImageService {
             vSilency = legacyVectorService.readVector(getImageSilencyVectorFile(albumPageImage));
             vFaces = legacyVectorService.readVector(getImageFaceVectorFile(albumPageImage));
         } catch (Exception e) {
+            if (resizeOnFailedVector){
+                log.warn("Image {} has no vector data. Resizing.",albumPageImage.getImageFilename());
+                return new ImmutablePair<>(getScaledImage(image,targetSize.getWidth(),targetSize.getHeight()),1.0);
+            }
             throw new RuntimeException(e);
         }
 
@@ -303,7 +318,10 @@ public class ImageService {
     private BufferedImage getScaledImage(BufferedImage image, double targetRatio) {
         int newWidth = (int) Math.round(image.getWidth() * targetRatio);
         int newHeight = (int) Math.round(image.getHeight() * targetRatio);
+        return getScaledImage(image,newWidth,newHeight);
+    }
 
+    private BufferedImage getScaledImage(BufferedImage image, int newWidth, int newHeight) {
         BufferedImage scaledImage = new BufferedImage(newWidth, newHeight, image.getType());
         Graphics2D g = scaledImage.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);

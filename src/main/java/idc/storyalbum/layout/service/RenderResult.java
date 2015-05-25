@@ -28,13 +28,22 @@ public class RenderResult {
             log.debug("  Creating image {}", output);
             BufferedImage image = new BufferedImage(pageLayout.getWidth(), pageLayout.getHeight(), BufferedImage.TYPE_INT_RGB);
             Graphics2D g = image.createGraphics();
+            if (pageLayout.getBackgroundImageFile() != null) {
+                try {
+                    BufferedImage background = ImageIO.read(pageLayout.getBackgroundImageFile());
+                    log.debug("  Using background");
+                    g.drawImage(background, 0, 0, null);
+                } catch (Exception e){
+                }
+
+            }
             for (ImageFrame imageFrame : pageLayout.getImageFrames()) {
-                BufferedImage frameImage=imageFrame.getImage();
-                log.debug("    Painting image frame at {},{}",imageFrame.getImageRect().getX(), imageFrame.getImageRect().getY());
+                BufferedImage frameImage = imageFrame.getImage();
+                log.debug("    Painting image frame at {},{}", imageFrame.getImageRect().getX(), imageFrame.getImageRect().getY());
                 g.drawImage(frameImage, imageFrame.getImageRect().getX(), imageFrame.getImageRect().getY(), null);
 
-                BufferedImage textImage=imageFrame.getTextImage();
-                log.debug("    Painting text frame at {},{}",imageFrame.getTextRect().getX(),imageFrame.getTextRect().getY());
+                BufferedImage textImage = imageFrame.getTextImage();
+                log.debug("    Painting text frame at {},{}", imageFrame.getTextRect().getX(), imageFrame.getTextRect().getY());
                 g.drawImage(textImage, imageFrame.getTextRect().getX(), imageFrame.getTextRect().getY(), null);
             }
             g.dispose();

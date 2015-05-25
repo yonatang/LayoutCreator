@@ -38,24 +38,60 @@ public class FaceVectorCreator {
         }
     }
 
-    static final String IMG_DIR = "/Users/yonatan/Dropbox/Studies/Story Albums/sets/Zoo/72157604991613315/images/";
-    static final String FACESUM_IMG_DIR = "/Users/yonatan/Dropbox/Studies/Story Albums/sets/Zoo/72157604991613315/faceSum/";
+    static final String ALBUM_ID="MP/72157630418695066";
+    static final String IMG_DIR = "/Users/yonatan/Dropbox/Studies/Story Albums/sets/"+ALBUM_ID+"/images/";
+    static final String FACESUM_IMG_DIR = "/Users/yonatan/Dropbox/Studies/Story Albums/sets/"+ALBUM_ID+"/faceSum/";
+// ImageData - if true is set, than x,y,w,h otherwise x,y,x2,y2
 
-    //SET 72157604991613315
     static List<ImageData> imageDatas = Lists.newArrayList(
-            new ImageData("41.jpg",true,502,507,618,826),
-            new ImageData("161.jpg",true,112,82,298,283),
-            new ImageData("110.jpg",true,669,381,307,310),
-            new ImageData("51.jpg",true,874,0,911,903,906,1203,920,598,2784,1780,936,769,69,1524,729,493),
-            new ImageData("187.jpg",true,306,113,220,177),
-            new ImageData("16.jpg",true,217,259,85,94),
-            new ImageData("96.jpg",true,494,129,243,345),
-            new ImageData("25.jpg",true,213,189,552,664,752,257,331,592),
-            new ImageData("122.jpg",true,16,261,269,350),
-            new ImageData("9.jpg",true,53,163,288,260),
-            new ImageData("15.jpg",true,736,941,731,825),
-            new ImageData("111.jpg",true,223,89,464,427)
+        new ImageData("22.jpg",true,1148,656,436,476),
+        new ImageData("29.jpg",true,598,90,282,402),
+        new ImageData("3.jpg",true,687,780,522,222,293,846,114,156),
+        new ImageData("10.jpg",true),
+        new ImageData("14.jpg",true,568,508,160,192),
+        new ImageData("13.jpg",true),
+        new ImageData("46.jpg",true),
+        new ImageData("20.jpg",true),
+        new ImageData("47.jpg",true,747,372,438,480,101,234,264,276),
+        new ImageData("7.jpg",true),
+        new ImageData("24.jpg",true),
+        new ImageData("30.jpg",true)
     );
+
+
+
+//    //SET 72157622641789194
+//    static List<ImageData> imageDatas = Lists.newArrayList(
+//        new ImageData("cusco_97.jpg",true),
+//        new ImageData("cusco_107a.jpg",true, 480,1020,504,552),
+//        new ImageData("31.jpg",true, 2493, 972,534,486),
+//        new ImageData("114.jpg",true),
+//        new ImageData("89.jpg",true, 1798,978,714,312),
+//        new ImageData("123.jpg",true,1516,1296,492,432),
+//        new ImageData("37.jpg",true),
+//        new ImageData("53.jpg",true),
+//        new ImageData("mp_70.jpg",true,2469,414,480,486),
+//        new ImageData("90.jpg",true),
+//        new ImageData("mp_136.jpg",true),
+//        new ImageData("mp_36.jpg",true)
+//    );
+
+//    //SET 72157604991613315
+//    static List<ImageData> imageDatas = Lists.newArrayList(
+//            //if true is set, than x,y,w,h otherwise x,y,x2,y2
+//            new ImageData("cusco_18.jpg",true),
+//            new ImageData("cusco_5.jpg",true,114,143,162,172),
+//            new ImageData("cusco_16.jpg",true),
+//            new ImageData("mp_35.jpg",true),
+//            new ImageData("mp_69.jpg",true),
+//            new ImageData("mp_110.jpg",true),
+//            new ImageData("mp_27.jpg",true,510,416,214,302),
+//            new ImageData("mp_10.jpg",true),
+//            new ImageData("mp_21.jpg",true,530,152,322,212),
+//            new ImageData("mp_66.jpg",true),
+//            new ImageData("mp_118.jpg",true),
+//            new ImageData("mp_64.jpg",true)
+//    );
 
 
 //    //SET 72157603658654812

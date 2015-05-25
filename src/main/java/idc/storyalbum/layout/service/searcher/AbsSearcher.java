@@ -114,7 +114,7 @@ public abstract class AbsSearcher {
 //            layout.getPages().add(pageLayout);
 //            pageIdx += size;
 //        }
-        log.debug("Found candidate layout {}",bestLayout);
+        log.debug("Found candidate layout {}", bestLayout);
         return bestLayout;
     }
 
@@ -152,6 +152,7 @@ public abstract class AbsSearcher {
         int templateSize = pageTemplate.getFrames().size();
         List<AlbumPage> subAlbumPages = album.getPages().subList(pageIdx, pageIdx + templateSize);
         PageLayout pageLayout = new PageLayout();
+        pageLayout.setBackgroundImageFile(pageTemplate.getBackgroundImageFile());
         pageLayout.setHeight(pageTemplate.getHeight());
         pageLayout.setWidth(pageTemplate.getWidth());
         double score = 0;

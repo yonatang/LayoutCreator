@@ -4,6 +4,8 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Setter;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,7 +14,7 @@ import java.util.List;
  */
 @Data
 public class PageTemplate {
-    private String fontColor;
+    private Integer fontColor;
     private String fontName;
     private int fontStyle;
     @Setter(AccessLevel.NONE)
@@ -20,5 +22,6 @@ public class PageTemplate {
 
     private int width;
     private int height;
+    private File backgroundImageFile;
 
 }
