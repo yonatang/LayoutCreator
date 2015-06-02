@@ -10,8 +10,10 @@ import idc.storyalbum.model.album.Album;
 import idc.storyalbum.model.album.AlbumPage;
 import idc.storyalbum.model.image.Rectangle;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -61,11 +63,14 @@ public abstract class AbsSearcher {
         }
     }
 
+    @Value("${story-album.turbo-factor:1}")
+    int turboFactor;
+
     Layout findBestMatchingLayout(Map<Integer, Set<PageTemplate>> templatesBySize,
                                   Album album,
                                   List<Integer> layoutOption) {
         List<List<PageTemplate>> allOptions = new ArrayList<>();
-        int totalOptions = 1;
+        long totalOptions = 1;
         int[] idxes = new int[layoutOption.size()];
         int[] idxes_max = new int[layoutOption.size()];
         for (int i = 0; i < layoutOption.size(); i++) {
@@ -75,11 +80,14 @@ public abstract class AbsSearcher {
             idxes_max[i] = templatesBySize.get(size).size();
         }
 
-        int i = 0;
+        long i = 0;
         int totalPages = album.getPages().size();
         double bestScore = Double.NEGATIVE_INFINITY;
-        Layout bestLayout = null;
-        while (i < totalOptions) {
+        List<Layout> bests = new ArrayList<>();
+
+        int maxSkip = turboFactor;
+        if (maxSkip<1){maxSkip=1;}
+        while (i < totalOptions-(maxSkip-1)) {
             i++;
             if (log.isDebugEnabled() && (i % 10000 == 0)) {
                 log.debug("    Looking at option {}/{}", i, totalOptions);
@@ -100,13 +108,27 @@ public abstract class AbsSearcher {
             score += 0.1 * (totalPages * totalPages / (maxn * maxn));
             layout.setScore(score);
             if (score > bestScore) {
-                bestLayout = layout;
+                bests.clear();
                 bestScore = score;
+                bests.add(layout);
+            }
+            if (Double.compare(score, bestScore) == 0) {
+                bests.add(layout);
             }
 
-            incArr(idxes_max, idxes);
+            if (maxSkip>1) {
+                int skip = RandomUtils.nextInt(1, maxSkip);
+                for (int j = 0; j < skip; j++) {
+                    incArr(idxes_max, idxes);
+                    i++;
+                }
+                i--;
+            }
 
         }
+        // Pick at random the best album from all the same albums with the same best score.
+        int bestLuckyOne = RandomUtils.nextInt(0, bests.size());
+        Layout bestLayout = bests.get(bestLuckyOne);
 //        int pageIdx = 0;
 //        Layout layout = new Layout();
 //        for (Integer size : layoutOption) {
